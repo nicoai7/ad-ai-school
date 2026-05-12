@@ -1,26 +1,150 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Navy palette */
+  --color-navy-50: #f0f3f8;
+  --color-navy-100: #d3dae6;
+  --color-navy-200: #a8b6cc;
+  --color-navy-300: #6f82a2;
+  --color-navy-400: #3c537a;
+  --color-navy-500: #1e3a5f;
+  --color-navy-600: #122042;
+  --color-navy-700: #0a1530;
+  /* Gold accent */
+  --color-gold: #c9a24b;
+  --color-gold-soft: #e7d9b1;
+  --color-gold-deep: #a37e2a;
+  --color-gold-light: #f3e6c1;
+  /* Silver */
+  --color-silver: #c5ccd3;
+  --color-silver-soft: #e8ebef;
+  --color-silver-deep: #8e98a3;
+  /* LINE */
+  --color-line: #06c755;
+  --color-line-dark: #04a847;
+  /* Text */
+  --color-text-main: #1e3a5f;
+  --color-text-soft: #5b6b85;
+  --color-text-light: #8e98a3;
+  /* Backgrounds */
+  --color-bg: #ffffff;
+  --color-bg-soft: #fafbfd;
+  --color-bg-tint: #f4f6fa;
+  /* Accent pink underline */
+  --color-pink-deep: #b91d52;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-navy-50: var(--color-navy-50);
+  --color-navy-100: var(--color-navy-100);
+  --color-navy-200: var(--color-navy-200);
+  --color-navy-300: var(--color-navy-300);
+  --color-navy-400: var(--color-navy-400);
+  --color-navy-500: var(--color-navy-500);
+  --color-navy-600: var(--color-navy-600);
+  --color-navy-700: var(--color-navy-700);
+  --color-gold: var(--color-gold);
+  --color-gold-soft: var(--color-gold-soft);
+  --color-gold-deep: var(--color-gold-deep);
+  --color-gold-light: var(--color-gold-light);
+  --color-silver: var(--color-silver);
+  --color-silver-soft: var(--color-silver-soft);
+  --color-silver-deep: var(--color-silver-deep);
+  --color-line: var(--color-line);
+  --color-line-dark: var(--color-line-dark);
+  --color-text-main: var(--color-text-main);
+  --color-text-soft: var(--color-text-soft);
+  --color-text-light: var(--color-text-light);
+  --color-bg: var(--color-bg);
+  --color-bg-soft: var(--color-bg-soft);
+  --color-bg-tint: var(--color-bg-tint);
+  --color-pink-deep: var(--color-pink-deep);
+  --font-sans: var(--font-noto-sans-jp);
+  --font-serif: var(--font-noto-serif-jp);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--color-text-main);
+}
+
+.bg-soft {
+  background: linear-gradient(180deg, #ffffff 0%, var(--color-bg-soft) 50%, var(--color-bg-tint) 100%);
+}
+
+.bg-tint {
+  background: var(--color-bg-tint);
+}
+
+.bg-navy-deep {
+  background: linear-gradient(135deg, var(--color-navy-500) 0%, var(--color-navy-700) 100%);
+}
+
+.bg-navy-elegant {
+  background: linear-gradient(180deg, var(--color-navy-600) 0%, var(--color-navy-700) 100%);
+}
+
+/* Gold ornamental hairline */
+.gold-hairline {
+  background: linear-gradient(90deg, transparent 0%, var(--color-gold) 50%, transparent 100%);
+  height: 1px;
+}
+
+/* Refined ornamental divider */
+.gold-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-gold);
+}
+.gold-divider::before,
+.gold-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+/* Animations */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.float-y { animation: float-y 4s ease-in-out infinite; }
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.shimmer { animation: shimmer 3s ease-in-out infinite; }
+
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(15px, -10px) scale(1.05); }
+  66% { transform: translate(-10px, 8px) scale(0.95); }
+}
+.blob-drift { animation: blob-drift 14s ease-in-out infinite; }
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+.sparkle { animation: sparkle 2.5s ease-in-out infinite; }
+
+/* Shine sweep effect for CTA buttons */
+@keyframes shine-sweep {
+  0% { transform: translateX(-150%) skewX(-18deg); opacity: 0; }
+  15% { opacity: 1; }
+  60% { transform: translateX(250%) skewX(-18deg); opacity: 0; }
+  100% { transform: translateX(250%) skewX(-18deg); opacity: 0; }
+}
+.animate-shine {
+  animation: shine-sweep 3.5s ease-in-out infinite;
+}
+
+html { scroll-behavior: smooth; }
+
+/* Font Serif for elegance accents */
+.font-serif {
+  font-family: var(--font-serif);
 }
