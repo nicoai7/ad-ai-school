@@ -4,6 +4,7 @@ import { WEBINAR_TITLE } from "@/lib/constants";
 import WatchPlayer from "@/components/WatchPlayer";
 import WatchExpired from "@/components/WatchExpired";
 import WatchInvalid from "@/components/WatchInvalid";
+import WatchClient from "@/components/WatchClient";
 
 export const metadata: Metadata = {
   title: `${WEBINAR_TITLE}｜AI広告起業スクール 無料ウェビナー`,
@@ -20,6 +21,13 @@ export default async function WatchPage({
   searchParams: SearchParams;
 }) {
   const { t, s } = await searchParams;
+
+  // URLパラメータが無い場合：Cookieベース運用にフォールバック（Lステップ未契約時）
+  if (!t && !s) {
+    return <WatchClient />;
+  }
+
+  // URLパラメータがある場合：署名検証＋期限判定（将来Lステップ連携時）
   const result = verifyToken(t, s);
 
   if (result.status === "invalid") {
