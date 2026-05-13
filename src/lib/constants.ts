@@ -2,8 +2,8 @@
 export const SCHOOL_NAME = "AI広告起業スクール";
 export const SCHOOL_NAME_EN = "AI AD FOUNDER SCHOOL";
 
-// 公式LINE URL（受領次第差し替え）
-export const LINE_URL = "#line-register";
+// 公式LINE URL
+export const LINE_URL = "https://lin.ee/X4Mc2V3";
 
 // LINE登録後に配布する無料プレゼントのNotion公開URL
 export const PRESENT_NOTION_URL =
