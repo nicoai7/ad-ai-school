@@ -9,6 +9,16 @@ export const LINE_URL = "#line-register";
 export const PRESENT_NOTION_URL =
   "https://www.notion.so/LINE-30-GPT-image2-30-35e6ae609e73815b8590f297188d8b9c";
 
+// 無料体験会の予約URL（TimeRex等のURLを設定する）
+export const TAIKENKAI_URL = "#taikenkai-booking";
+
+// YouTube限定公開動画のID（動画URL末尾のID部分）
+// 例: https://www.youtube.com/watch?v=ABC123XYZ → "ABC123XYZ"
+export const WEBINAR_YOUTUBE_ID = "PLACEHOLDER_VIDEO_ID";
+
+// ウェビナータイトル
+export const WEBINAR_TITLE = "AIで広告代理店を立ち上げて、月商7桁を作る3ステップ";
+
 // CTAデフォルト文言
 export const CTA_LABEL = "無料ウェビナーを視聴する";
 export const CTA_SUB_LABEL =
