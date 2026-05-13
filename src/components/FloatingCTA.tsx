@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { PlayCircle } from "lucide-react";
 import { LINE_URL } from "@/lib/constants";
+import { trackEvent } from "@/lib/pixel";
 
 export default function FloatingCTA() {
   const [show, setShow] = useState(false);
@@ -28,6 +29,7 @@ export default function FloatingCTA() {
         <div className="max-w-md mx-auto">
           <motion.a
             href={LINE_URL}
+            onClick={() => trackEvent("Lead", { content_name: "LineRegister_Floating" })}
             className="relative overflow-hidden w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-b from-navy-500 via-navy-600 to-navy-700 text-white font-black tracking-wide ring-2 ring-gold/80 px-5 py-4 text-sm sm:text-base"
             style={{
               boxShadow:
