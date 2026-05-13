@@ -1,8 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { Clock, Calendar, ExternalLink } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { Clock, Calendar, ExternalLink, CheckCircle2 } from "lucide-react";
 import {
   WEBINAR_TITLE,
   WEBINAR_YOUTUBE_ID,
@@ -14,9 +14,33 @@ type Props = {
   expiresAt: string;
 };
 
+// YouTube IFrame API type stub
+type YTPlayer = { destroy?: () => void };
+type YTPlayerStateChange = { data: number };
+declare global {
+  interface Window {
+    YT?: {
+      Player: new (
+        el: HTMLElement | string,
+        config: {
+          videoId: string;
+          playerVars?: Record<string, number | string>;
+          events?: { onStateChange?: (e: YTPlayerStateChange) => void };
+        }
+      ) => YTPlayer;
+      PlayerState: { ENDED: 0 };
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
   const [remaining, setRemaining] = useState(remainingMs);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const playerRef = useRef<YTPlayer | null>(null);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Countdown
   useEffect(() => {
     const interval = setInterval(() => {
       setRemaining((prev) => {
@@ -29,6 +53,56 @@ export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
       });
     }, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // YouTube IFrame API setup
+  useEffect(() => {
+    if (WEBINAR_YOUTUBE_ID === "PLACEHOLDER_VIDEO_ID") return;
+    if (!playerContainerRef.current) return;
+
+    const initPlayer = () => {
+      if (!playerContainerRef.current || !window.YT?.Player) return;
+      playerRef.current = new window.YT.Player(playerContainerRef.current, {
+        videoId: WEBINAR_YOUTUBE_ID,
+        playerVars: {
+          rel: 0,
+          modestbranding: 1,
+        },
+        events: {
+          onStateChange: (event) => {
+            // 0 = ENDED
+            if (event.data === 0) {
+              setVideoEnded(true);
+            }
+          },
+        },
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      initPlayer();
+    } else {
+      // API スクリプトを読み込み
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        'script[src="https://www.youtube.com/iframe_api"]'
+      );
+      if (!existingScript) {
+        const tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+      }
+      window.onYouTubeIframeAPIReady = initPlayer;
+    }
+
+    return () => {
+      if (playerRef.current?.destroy) {
+        try {
+          playerRef.current.destroy();
+        } catch {
+          // ignore
+        }
+      }
+    };
   }, []);
 
   const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
@@ -84,21 +158,13 @@ export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
         >
           {WEBINAR_YOUTUBE_ID === "PLACEHOLDER_VIDEO_ID" ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-silver-soft p-6 text-center">
-              <p className="text-base sm:text-lg font-bold mb-2">
-                動画準備中
-              </p>
+              <p className="text-base sm:text-lg font-bold mb-2">動画準備中</p>
               <p className="text-xs sm:text-sm text-silver">
                 YouTubeにアップロード後、`WEBINAR_YOUTUBE_ID` を差し替えてください
               </p>
             </div>
           ) : (
-            <iframe
-              src={`https://www.youtube.com/embed/${WEBINAR_YOUTUBE_ID}?rel=0&modestbranding=1`}
-              title={WEBINAR_TITLE}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            <div ref={playerContainerRef} className="w-full h-full" />
           )}
         </motion.div>
 
@@ -128,31 +194,50 @@ export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
           </div>
         </motion.div>
 
-        <motion.div
-          className="bg-gradient-to-br from-navy-50 to-white border border-silver/70 rounded-2xl p-6 sm:p-8 max-w-3xl mx-auto text-center shadow-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <p className="text-[10px] sm:text-xs tracking-widest text-gold-deep font-bold mb-3">
-            ウェビナー視聴者限定
-          </p>
-          <h2 className="text-lg sm:text-2xl font-black text-navy-600 leading-snug mb-3">
-            AI × 広告マーケ 無料体験会
-          </h2>
-          <p className="text-sm text-text-soft leading-relaxed mb-5">
-            ウェビナーで紹介した3ステップを、あなたの状況に合わせて
-            <br className="hidden sm:block" />
-            プロのコンサルタントが個別に解説します
-          </p>
-          <a
-            href={TAIKENKAI_URL}
-            className="inline-flex items-center gap-2 bg-gradient-to-b from-navy-500 via-navy-600 to-navy-700 text-white font-black px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-base ring-2 ring-gold/80 shadow-lg hover:scale-105 transition-transform"
-          >
-            体験会を予約する
-            <ExternalLink className="w-4 h-4" strokeWidth={2.5} />
-          </a>
-        </motion.div>
+        {/* 視聴完了後に表示される体験会セクション */}
+        <AnimatePresence>
+          {videoEnded && (
+            <motion.section
+              key="taikenkai"
+              initial={{ opacity: 0, y: 30, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              className="bg-gradient-to-br from-navy-50 to-white border border-gold/60 rounded-2xl p-6 sm:p-10 max-w-3xl mx-auto text-center shadow-xl relative"
+            >
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-gold-deep via-gold to-gold-deep text-white font-black px-5 py-1.5 rounded-full text-[11px] sm:text-xs shadow-md whitespace-nowrap tracking-wide flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2.5} />
+                ウェビナー視聴完了
+              </div>
+
+              <p className="text-[10px] sm:text-xs tracking-widest text-gold-deep font-bold mt-3 mb-3">
+                ご視聴ありがとうございました
+              </p>
+              <h2 className="text-lg sm:text-2xl font-black text-navy-600 leading-snug mb-3">
+                ここまでご覧いただいたあなたへ
+                <br />
+                AI × 広告マーケ 無料体験会
+              </h2>
+              <p className="text-sm text-text-soft leading-relaxed mb-6">
+                ウェビナーで紹介した
+                <span className="font-black text-navy-600">「月商7桁を作る3ステップ」</span>
+                を、あなたの状況に合わせて
+                <br className="hidden sm:block" />
+                プロのコンサルタントが個別に解説します
+              </p>
+              <a
+                href={TAIKENKAI_URL}
+                className="inline-flex items-center gap-2 bg-gradient-to-b from-navy-500 via-navy-600 to-navy-700 text-white font-black px-7 sm:px-10 py-4 sm:py-5 rounded-full text-base sm:text-lg ring-2 ring-gold/80 shadow-lg hover:scale-105 transition-transform"
+              >
+                体験会を予約する
+                <ExternalLink className="w-5 h-5" strokeWidth={2.5} />
+              </a>
+              <p className="mt-4 text-[11px] sm:text-xs text-text-light">
+                完全オンライン / 60〜90分 / 強引な勧誘なし
+              </p>
+            </motion.section>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   );
