@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { verifyToken } from "@/lib/token";
+import { verifyDateParam } from "@/lib/token";
 import { WEBINAR_TITLE } from "@/lib/constants";
 import WatchPlayer from "@/components/WatchPlayer";
 import WatchExpired from "@/components/WatchExpired";
@@ -13,35 +13,38 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type SearchParams = Promise<{ t?: string; s?: string }>;
+type SearchParams = Promise<{ t?: string }>;
 
 export default async function WatchPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { t, s } = await searchParams;
+  const { t } = await searchParams;
 
-  // URLパラメータが無い場合：Cookieベース運用にフォールバック（Lステップ未契約時）
-  if (!t && !s) {
+  // パラメータが無い場合：Cookieベース運用にフォールバック
+  // （連携前からの既存友だちへ手動一斉送信で配布したURLなど）
+  if (!t) {
     return <WatchClient />;
   }
 
-  // URLパラメータがある場合：署名検証＋期限判定（将来Lステップ連携時）
-  const result = verifyToken(t, s);
+  // パラメータがある場合：配信日（YYYY/M/D）を起点に「登録日含めて3日間」を判定
+  const result = verifyDateParam(t);
 
   if (result.status === "invalid") {
     return <WatchInvalid reason={result.reason} />;
   }
 
   if (result.status === "expired") {
-    return <WatchExpired expiresAt={result.expiresAt} />;
+    return (
+      <WatchExpired lastViewableDate={result.lastViewableDate.toISOString()} />
+    );
   }
 
   return (
     <WatchPlayer
       remainingMs={result.remainingMs}
-      expiresAt={result.expiresAt.toISOString()}
+      lastViewableDate={result.lastViewableDate.toISOString()}
     />
   );
 }

@@ -1,89 +1,77 @@
-import crypto from "crypto";
+// 視聴期限：公式LINE登録日（=Lステップ「配信日」）を含めて3日間
+// 例: 5/14登録 → 5/14・5/15・5/16が視聴可能、5/17 00:00(JST)で期限切れ
+export const VIEWING_DAYS = 3;
 
-// Lステップ契約後に環境変数 WEBINAR_SECRET をVercelで設定する
-// 設定がない場合のフォールバック（開発用）
-const SECRET = process.env.WEBINAR_SECRET ?? "dev-only-secret-please-change-in-production";
-
-// 視聴期限：3日 = 72時間
-export const VIEWING_WINDOW_MS = 72 * 60 * 60 * 1000;
-
-/**
- * URLパラメータ用のトークンを生成する
- * usage: 開発時にテスト用URLを発行する
- *   const token = signToken(new Date());
- *   ?t=<token.t>&s=<token.s>
- */
-export function signToken(registeredAt: Date): { t: string; s: string } {
-  const t = registeredAt.toISOString();
-  const s = crypto
-    .createHmac("sha256", SECRET)
-    .update(t)
-    .digest("hex")
-    .slice(0, 16);
-  return { t, s };
-}
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type VerifyResult =
-  | { status: "ok"; registeredAt: Date; expiresAt: Date; remainingMs: number }
-  | { status: "expired"; registeredAt: Date; expiresAt: Date }
+  | {
+      status: "ok";
+      registeredDate: Date;
+      lastViewableDate: Date;
+      expiresAt: Date;
+      remainingMs: number;
+    }
+  | {
+      status: "expired";
+      registeredDate: Date;
+      lastViewableDate: Date;
+      expiresAt: Date;
+    }
   | { status: "invalid"; reason: string };
 
 /**
- * URLパラメータのトークンを検証する
+ * 視聴URLパラメータ t を検証する。
+ * t は公式LINE（Lステップ）の「配信日」差し込み値。形式は YYYY/M/D のスラッシュ区切り。
+ *   例: https://ad-ai-school.vercel.app/watch?t=2026/05/14
+ * 視聴期限は JST 基準で「登録日を含めて3日間」。署名検証は行わない（スタートプランでは署名生成不可のため）。
  */
-export function verifyToken(t: string | undefined, s: string | undefined): VerifyResult {
-  if (!t || !s) {
-    return { status: "invalid", reason: "パラメータが不足しています" };
+export function verifyDateParam(t: string | undefined): VerifyResult {
+  if (!t) {
+    return { status: "invalid", reason: "視聴URLのパラメータが不足しています" };
   }
 
-  // ISO日時パース、もしくはUNIX秒対応（柔軟に）
-  let registeredAt: Date;
-  if (/^\d+$/.test(t)) {
-    // UNIX秒
-    registeredAt = new Date(parseInt(t, 10) * 1000);
-  } else {
-    registeredAt = new Date(t);
+  // YYYY/M/D（ゼロ埋め有無どちらも許容）
+  const m = t.trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!m) {
+    return { status: "invalid", reason: "視聴URLの日付形式が正しくありません" };
   }
 
-  if (isNaN(registeredAt.getTime())) {
-    return { status: "invalid", reason: "不正な日時パラメータです" };
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+
+  // 暦日として妥当かチェック（例: 2026/13/40 や 2026/02/30 を弾く）
+  const baseUtcMs = Date.UTC(year, month - 1, day);
+  const check = new Date(baseUtcMs);
+  if (
+    check.getUTCFullYear() !== year ||
+    check.getUTCMonth() !== month - 1 ||
+    check.getUTCDate() !== day
+  ) {
+    return { status: "invalid", reason: "存在しない日付です" };
   }
 
-  // 署名検証
-  const expectedS = crypto
-    .createHmac("sha256", SECRET)
-    .update(registeredAt.toISOString())
-    .digest("hex")
-    .slice(0, 16);
+  // JST 00:00 を絶対時刻（UTCミリ秒）で表す
+  const registeredMs = baseUtcMs - JST_OFFSET_MS;
+  const expiresMs = registeredMs + VIEWING_DAYS * DAY_MS;
 
-  // 署名検証緩和版（ISO形式の文字列直接でも、parse後のISO形式でもどちらでも通る）
-  const rawT = t;
-  const expectedRawS = crypto
-    .createHmac("sha256", SECRET)
-    .update(rawT)
-    .digest("hex")
-    .slice(0, 16);
+  const registeredDate = new Date(registeredMs);
+  const expiresAt = new Date(expiresMs);
+  // 表示用の最終視聴日（期限の前日）= 登録日 + (VIEWING_DAYS - 1)
+  const lastViewableDate = new Date(registeredMs + (VIEWING_DAYS - 1) * DAY_MS);
 
-  if (!safeCompare(s, expectedS) && !safeCompare(s, expectedRawS)) {
-    return { status: "invalid", reason: "署名が一致しません" };
-  }
-
-  const expiresAt = new Date(registeredAt.getTime() + VIEWING_WINDOW_MS);
-  const now = Date.now();
-  const remainingMs = expiresAt.getTime() - now;
-
+  const remainingMs = expiresMs - Date.now();
   if (remainingMs <= 0) {
-    return { status: "expired", registeredAt, expiresAt };
+    return { status: "expired", registeredDate, lastViewableDate, expiresAt };
   }
 
-  return { status: "ok", registeredAt, expiresAt, remainingMs };
-}
-
-function safeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  try {
-    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-  } catch {
-    return false;
-  }
+  return {
+    status: "ok",
+    registeredDate,
+    lastViewableDate,
+    expiresAt,
+    remainingMs,
+  };
 }

@@ -5,16 +5,17 @@ import { Clock, ExternalLink, MessageCircle } from "lucide-react";
 import { TAIKENKAI_URL, LINE_URL } from "@/lib/constants";
 
 type Props = {
-  expiresAt: Date;
+  // 最終視聴日（ISO文字列）。表示は JST の日付で行う
+  lastViewableDate: string;
 };
 
-export default function WatchExpired({ expiresAt }: Props) {
-  const expiresStr = expiresAt.toLocaleString("ja-JP", {
+export default function WatchExpired({ lastViewableDate }: Props) {
+  const expiresStr = new Date(lastViewableDate).toLocaleDateString("ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    weekday: "short",
+    timeZone: "Asia/Tokyo",
   });
 
   return (
@@ -46,7 +47,7 @@ export default function WatchExpired({ expiresAt }: Props) {
           </h1>
 
           <p className="text-sm text-text-soft mb-6">
-            視聴期限：{expiresStr}
+            視聴期限：{expiresStr} まで
           </p>
 
           <div className="bg-bg-soft rounded-xl p-5 mb-8 text-left">

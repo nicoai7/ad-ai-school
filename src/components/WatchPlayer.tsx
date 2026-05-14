@@ -12,7 +12,8 @@ import { trackEvent, trackCustomEvent, makeTrackingClickHandler } from "@/lib/pi
 
 type Props = {
   remainingMs: number;
-  expiresAt: string;
+  // 最終視聴日（ISO文字列）。表示は JST の日付で行う
+  lastViewableDate: string;
 };
 
 // YouTube IFrame API type stub
@@ -35,7 +36,7 @@ declare global {
   }
 }
 
-export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
+export default function WatchPlayer({ remainingMs, lastViewableDate }: Props) {
   const [remaining, setRemaining] = useState(remainingMs);
   const [videoEnded, setVideoEnded] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -116,13 +117,12 @@ export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
   const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
   const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
 
-  const expiresDate = new Date(expiresAt);
-  const expiresStr = expiresDate.toLocaleString("ja-JP", {
+  const expiresStr = new Date(lastViewableDate).toLocaleDateString("ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    weekday: "short",
+    timeZone: "Asia/Tokyo",
   });
 
   return (
@@ -195,7 +195,7 @@ export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
               <Calendar className="w-4 h-4 text-gold-deep" strokeWidth={2.5} />
               <div className="text-xs sm:text-sm">
                 <span className="font-bold">視聴期限 </span>
-                <span className="font-bold text-navy-600">{expiresStr}</span>
+                <span className="font-bold text-navy-600">{expiresStr} まで</span>
               </div>
             </div>
           </div>
