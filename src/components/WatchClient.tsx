@@ -2,7 +2,6 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import WatchPlayer from "./WatchPlayer";
-import WatchExpired from "./WatchExpired";
 
 // パラメータなしアクセス時のフォールバック。
 // 初回アクセスした「日」を起点に、その日を含めて3日間視聴可能とする。
@@ -61,16 +60,15 @@ export default function WatchClient() {
     );
   }
 
-  const expiresMs = firstAccessDayMs + VIEWING_DAYS * DAY_MS;
+  const expiresAtMs = firstAccessDayMs + VIEWING_DAYS * DAY_MS;
   const lastViewableMs = firstAccessDayMs + (VIEWING_DAYS - 1) * DAY_MS;
   const lastViewableDate = new Date(lastViewableMs).toISOString();
-  const remainingMs = expiresMs - Date.now();
 
-  if (remainingMs <= 0) {
-    return <WatchExpired lastViewableDate={lastViewableDate} />;
-  }
-
+  // 期限切れ判定・カウントダウンは WatchPlayer に一本化
   return (
-    <WatchPlayer remainingMs={remainingMs} lastViewableDate={lastViewableDate} />
+    <WatchPlayer
+      expiresAtMs={expiresAtMs}
+      lastViewableDate={lastViewableDate}
+    />
   );
 }

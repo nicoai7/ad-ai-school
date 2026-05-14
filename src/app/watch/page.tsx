@@ -43,7 +43,7 @@ export default async function WatchPage({
 
   return (
     <WatchPlayer
-      remainingMs={result.remainingMs}
+      expiresAtMs={result.expiresAt.getTime()}
       lastViewableDate={result.lastViewableDate.toISOString()}
     />
   );

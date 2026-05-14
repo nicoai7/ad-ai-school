@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Clock, Calendar, ExternalLink, CheckCircle2 } from "lucide-react";
 import {
   WEBINAR_TITLE,
@@ -9,12 +9,23 @@ import {
   TAIKENKAI_URL,
 } from "@/lib/constants";
 import { trackEvent, trackCustomEvent, makeTrackingClickHandler } from "@/lib/pixel";
+import WatchExpired from "./WatchExpired";
 
 type Props = {
-  remainingMs: number;
+  // 視聴期限の絶対時刻（UNIXミリ秒）
+  expiresAtMs: number;
   // 最終視聴日（ISO文字列）。表示は JST の日付で行う
   lastViewableDate: string;
 };
+
+// 現在時刻（ms）を1秒ごとに通知する外部ストア
+function subscribeNow(callback: () => void): () => void {
+  const id = setInterval(callback, 1000);
+  return () => clearInterval(id);
+}
+function getNowSnapshot(): number {
+  return Date.now();
+}
 
 // YouTube IFrame API type stub
 type YTPlayer = { destroy?: () => void };
@@ -36,8 +47,12 @@ declare global {
   }
 }
 
-export default function WatchPlayer({ remainingMs, lastViewableDate }: Props) {
-  const [remaining, setRemaining] = useState(remainingMs);
+export default function WatchPlayer({ expiresAtMs, lastViewableDate }: Props) {
+  const now = useSyncExternalStore(
+    subscribeNow,
+    getNowSnapshot,
+    getNowSnapshot
+  );
   const [videoEnded, setVideoEnded] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
   const playerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -45,21 +60,6 @@ export default function WatchPlayer({ remainingMs, lastViewableDate }: Props) {
   // ViewContent 発火（ページ到達計測）
   useEffect(() => {
     trackEvent("ViewContent", { content_name: "WebinarWatchPage" });
-  }, []);
-
-  // Countdown
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRemaining((prev) => {
-        const next = prev - 1000;
-        if (next <= 0) {
-          window.location.reload();
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // YouTube IFrame API setup
@@ -112,6 +112,13 @@ export default function WatchPlayer({ remainingMs, lastViewableDate }: Props) {
       }
     };
   }, []);
+
+  const remaining = expiresAtMs - now;
+
+  // 視聴期限切れ
+  if (remaining <= 0) {
+    return <WatchExpired lastViewableDate={lastViewableDate} />;
+  }
 
   const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
   const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
@@ -186,7 +193,10 @@ export default function WatchPlayer({ remainingMs, lastViewableDate }: Props) {
               <Clock className="w-4 h-4 text-gold-deep" strokeWidth={2.5} />
               <div className="text-xs sm:text-sm">
                 <span className="font-bold">視聴可能時間 </span>
-                <span className="font-black text-navy-600">
+                <span
+                  className="font-black text-navy-600"
+                  suppressHydrationWarning
+                >
                   あと{days}日 {hours}時間 {minutes}分
                 </span>
               </div>
