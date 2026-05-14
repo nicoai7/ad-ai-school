@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { PlayCircle } from "lucide-react";
 import { CTA_LABEL } from "@/lib/constants";
-import { trackEvent } from "@/lib/pixel";
+import { makeTrackingClickHandler } from "@/lib/pixel";
 
 type Props = {
   href?: string;
@@ -27,7 +27,9 @@ export default function LineButton({
     <div className="flex flex-col items-center w-full">
       <motion.a
         href={href}
-        onClick={() => trackEvent("Lead", { content_name: "LineRegister_CTA" })}
+        onClick={makeTrackingClickHandler(href, "Lead", {
+          content_name: "LineRegister_CTA",
+        })}
         className={`relative overflow-hidden inline-flex items-center justify-center gap-2 sm:gap-3 rounded-full bg-gradient-to-b from-navy-500 via-navy-600 to-navy-700 text-white font-black tracking-wide ring-2 ring-gold/80 ${sizeClass} max-w-full text-center leading-tight`}
         style={{
           boxShadow:

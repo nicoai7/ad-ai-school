@@ -8,7 +8,7 @@ import {
   WEBINAR_YOUTUBE_ID,
   TAIKENKAI_URL,
 } from "@/lib/constants";
-import { trackEvent, trackCustomEvent } from "@/lib/pixel";
+import { trackEvent, trackCustomEvent, makeTrackingClickHandler } from "@/lib/pixel";
 
 type Props = {
   remainingMs: number;
@@ -234,11 +234,9 @@ export default function WatchPlayer({ remainingMs, expiresAt }: Props) {
               </p>
               <a
                 href={TAIKENKAI_URL}
-                onClick={() =>
-                  trackEvent("InitiateCheckout", {
-                    content_name: "TaikenkaiBooking",
-                  })
-                }
+                onClick={makeTrackingClickHandler(TAIKENKAI_URL, "InitiateCheckout", {
+                  content_name: "TaikenkaiBooking",
+                })}
                 className="inline-flex items-center gap-2 bg-gradient-to-b from-navy-500 via-navy-600 to-navy-700 text-white font-black px-7 sm:px-10 py-4 sm:py-5 rounded-full text-base sm:text-lg ring-2 ring-gold/80 shadow-lg hover:scale-105 transition-transform"
               >
                 体験会を予約する

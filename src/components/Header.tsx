@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { PlayCircle } from "lucide-react";
 import { LINE_URL, SCHOOL_NAME } from "@/lib/constants";
-import { trackEvent } from "@/lib/pixel";
+import { makeTrackingClickHandler } from "@/lib/pixel";
 
 export default function Header() {
   return (
@@ -30,7 +30,9 @@ export default function Header() {
 
         <a
           href={LINE_URL}
-          onClick={() => trackEvent("Lead", { content_name: "LineRegister_Header" })}
+          onClick={makeTrackingClickHandler(LINE_URL, "Lead", {
+            content_name: "LineRegister_Header",
+          })}
           className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-b from-navy-500 to-navy-700 text-white font-black text-xs sm:text-sm rounded-full px-3.5 sm:px-5 py-2 sm:py-2.5 shadow-[0_4px_12px_-2px_rgba(30,58,95,0.5),inset_0_-2px_0_rgba(0,0,0,0.22)] ring-1 ring-gold/60 hover:scale-105 transition-transform whitespace-nowrap"
         >
           <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gold" strokeWidth={2} />

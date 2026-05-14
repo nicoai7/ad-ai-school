@@ -43,3 +43,28 @@ export function trackCustomEvent(
     }
   }
 }
+
+/**
+ * 外部リンク遷移前にイベントを送信する用のクリックハンドラ
+ * - preventDefault でデフォルト遷移を止める
+ * - イベント送信
+ * - 250ms後にlocation.hrefで遷移（Pixelビーコン送信時間を確保）
+ */
+export function makeTrackingClickHandler(
+  href: string,
+  event: string,
+  params?: Record<string, unknown>
+): (e: React.MouseEvent<HTMLElement>) => void {
+  return (e) => {
+    // Cmd/Ctrl+クリック・中クリックは新規タブで開く動作を維持
+    if (e.metaKey || e.ctrlKey || e.button === 1) {
+      trackEvent(event, params);
+      return;
+    }
+    e.preventDefault();
+    trackEvent(event, params);
+    setTimeout(() => {
+      window.location.href = href;
+    }, 250);
+  };
+}
