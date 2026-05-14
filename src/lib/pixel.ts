@@ -1,5 +1,5 @@
 // Meta Pixel ID
-export const META_PIXEL_ID = "206044873573791";
+export const META_PIXEL_ID = "2206044873573791";
 
 type FbqFunction = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void;
