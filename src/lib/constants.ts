@@ -14,7 +14,7 @@ export const TAIKENKAI_URL = "https://timerex.net/s/contact_0f6c_1382/0f383d20";
 
 // YouTube限定公開動画のID（動画URL末尾のID部分）
 // 例: https://www.youtube.com/watch?v=ABC123XYZ → "ABC123XYZ"
-export const WEBINAR_YOUTUBE_ID: string = "zC2083J7nfs";
+export const WEBINAR_YOUTUBE_ID: string = "ZsW_TzSqxMk";
 
 // ウェビナータイトル
 export const WEBINAR_TITLE = "AIで広告代理店を立ち上げて、月商7桁を作る3ステップ";
